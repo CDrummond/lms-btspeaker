@@ -4,6 +4,8 @@ Introduction
 Simple script to launch a squeezlite instance for each connected, and
 configured, BT device.
 
+Code is forked/modified from https://github.com/oweitman/squeezelite-bluetooth/
+
 Usage
 =====
 
