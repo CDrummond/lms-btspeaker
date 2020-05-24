@@ -1,0 +1,15 @@
+[Unit]
+Description=Bluetooth Speaker Connectionmonitor
+After=syslog.target
+
+[Service]
+Type=simple
+User=lms
+Environment=LIBASOUND_THREAD_SAFE=0
+WorkingDirectory=/usr/local/bluetooth
+ExecStart=/usr/local/bluetooth/bluetooth/btspeaker-monitor.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
