@@ -11,7 +11,7 @@ Usage
 
 1. Copy `btspeaker-monitor.py`, `bt-devices`, and `check-squeezelite` to `/usr/local/bluetooth`
 2. `chmod +x /usr/local/bluetooth/btspeaker-monitor.py /usr/local/bluetooth/check-squeezelite`
-2. Edit `bt-devices` to set LSM player name for a BT devices MAC address
+2. Edit `bt-devices` to set LMS player name for a BT devices MAC address
 3. Pair BT devices if not already
 4. Copy `btspeaker-monitor.service` to `/etc/systemd/system`
 5. `sudo daemon-reload`
