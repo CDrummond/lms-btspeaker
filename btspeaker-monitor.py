@@ -140,7 +140,8 @@ def connected(hci, dev, name):
         return
 
     debug("Connected %s" % name,hci,dev)
-    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}}
+    lms = 'localhost' if len(sys.argv)<2 else sys.argv[1]
+    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', lms, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}}
     openInput(key)
     controlChecker(1)
 
