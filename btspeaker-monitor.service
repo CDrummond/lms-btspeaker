@@ -1,5 +1,5 @@
 [Unit]
-Description=Bluetooth Speaker Connectionmonitor
+Description=Bluetooth Speaker Connection Monitor
 After=syslog.target
 
 [Service]
