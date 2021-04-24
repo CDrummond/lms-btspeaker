@@ -172,28 +172,37 @@ def catchallHandler(name, attr, *args, **kwargs):
     """Catch all handler.
     Catch and debug information about all signals.
     """
-    if name != "org.bluez.MediaControl1" :
-        return
-    dev = None
-    hci = None
-    if 'path' in kwargs:
+    if name == "org.bluez.MediaControl1" :
+        dev = None
+        hci = None
+        if 'path' in kwargs:
+            parts=kwargs['path'].split('/')
+            if len(parts)>=4:
+                hci=parts[3]
+                dev=":".join(parts[4].split('_')[1:])
+
+        name = None
+        if None!=dev and None!=hci:
+            name = getName(dev)
+
+        if None==name:
+            debug("Unknown device")
+        else:
+            # kwargs['member']='InterfacesRemoved' / 'InterfacesAdded'
+            if attr["Connected"] == 0 :
+                disconnected(dev, name)
+            elif attr["Connected"] == 1 :
+                connected(hci, dev, name)
+    elif name == "org.bluez.Device1" and 'member' in kwargs and 'path' in kwargs and kwargs['member']=='PropertiesChanged' and 'Connected' in attr and attr['Connected'] == 1:
         parts=kwargs['path'].split('/')
         if len(parts)>=4:
-            hci=parts[3]
-            dev=":".join(parts[4].split('_')[1:])
-
-    name = None
-    if None!=dev and None!=hci:
-        name = getName(dev)
-
-    if None==name:
-        debug("Unknown device")
-    else:
-        # kwargs['member']='InterfacesRemoved' / 'InterfacesAdded'
-        if attr["Connected"] == 0 :
-            disconnected(dev, name)
-        elif attr["Connected"] == 1 :
-            connected(hci, dev, name)
+            key="_".join(parts[4].split('_')[1:])
+            if not key in players:
+                debug('Call Connect for %s' % key)
+                bus = dbus.SystemBus()
+                service = bus.get_object('org.bluez', kwargs['path'])
+                iface = dbus.Interface(service, name)
+                iface.Connect()
 
 
 if __name__ == '__main__':
