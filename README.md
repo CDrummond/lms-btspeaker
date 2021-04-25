@@ -13,8 +13,8 @@ none passed 'localhost' is assumed.
 Usage
 =====
 
-1. Copy `btspeaker-monitor.py`, `bt-devices`, and `check-squeezelite` to `/usr/local/bluetooth`
-2. `chmod +x /usr/local/bluetooth/btspeaker-monitor.py /usr/local/bluetooth/check-squeezelite`
+1. Copy `btspeaker-monitor.py` and`bt-devices`, to `/usr/local/bluetooth`
+2. `chmod +x /usr/local/bluetooth/btspeaker-monitor.py`
 2. Edit `bt-devices` to set LMS player name for a BT devices MAC address
 3. Pair BT devices if not already
 ```

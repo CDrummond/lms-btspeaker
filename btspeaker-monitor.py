@@ -28,18 +28,62 @@ def debug(*args):
     if dbg == True:
         print(*args)
 
+# CPU usage checking...................
+CPU_CHECK_TIMEOUT=30000
+MAX_CPU_USAGE=70
 numPlayers=0
 checker=None
+
+def checkPlayersCpuUsage():
+    global numPlayers
+    global checker
+    if numPlayers>0:
+        pidlist="-p"
+        playerMap={}
+        for key in players:
+            pidlist+=players[key]['squeeze'].pid+','
+            playerMap[''+players[key]['squeeze'].pid]=key
+        pidlist=pidlist[:-1]
+
+        result = subprocess.run(['ps', '-o', 'pid,pcpu', pidlist], stdout=subprocess.PIPE)
+        for line in result.stdout.decode('utf-8').splitlines():
+            if '%CPU' not in line: # Ignore header...
+                parts = re.sub(' {2,}', ' ', line.strip()).split(' ')
+                if len(parts)>=2 and float(parts[1])>MAX_CPU_USAGE:
+                    debug('%d is taking too much CPU (%f%%)' % (parts[1], parts[2]))
+                    key = playerMap[parts[0]]
+                    dbusPath = players[key]['path']
+
+                    # Kill squeezelite instance
+                    players[key]['squeeze'].kill()
+                    os.waitpid(players[key]['squeeze'].pid, 0)
+
+                    # Disconnect input monitoring
+                    closeInput(key)
+                    players.pop(key)
+
+                    # Disconnect DBUS instance
+                    bus = dbus.SystemBus()
+                    service = bus.get_object('org.bluez', dbusPath)
+                    iface = dbus.Interface(service, 'org.bluez.Device1')
+                    iface.Disconnect()
+
+                    numPlayers -= 1
+
+        if numPlayers>0:
+            checker = GLib.timeout_add(CPU_CHECK_TIMEOUT, checkPlayersCpuUsage)
+    else:
+        checker = None
+
+
 def controlChecker(val):
     global numPlayers
     global checker
-    numPlayers += val 
-    if 0==numPlayers and checker is not None:
-        checker.kill()
-        os.waitpid(checker.pid, 0)
-        checker=None
-    elif 1==numPlayers and checker is None:
-        checker=Popen([CHECKER], stdout=DEVNULL, stderr=DEVNULL, shell=False)
+    numPlayers += val
+    if checker is None and numPlayers>0:
+        checker = GLib.timeout_add(CPU_CHECK_TIMEOUT, checkPlayersCpuUsage)
+
+# .....................................
 
 
 # Input handling.......................
@@ -134,14 +178,14 @@ def closeInput(key):
     players[key]['input']={'checks':0, 'dev':None, 'watch': None}
 #......................................
 
-def connected(hci, dev, name):
+def connected(hci, dev, name, path):
     key=dev.replace(':', '_')
     if key in players:
         return
 
     debug("Connected %s" % name,hci,dev)
     lms = 'localhost' if len(sys.argv)<2 else sys.argv[1]
-    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', lms, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}}
+    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', lms, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path}
     openInput(key)
     controlChecker(1)
 
@@ -192,7 +236,7 @@ def catchallHandler(name, attr, *args, **kwargs):
             if attr["Connected"] == 0 :
                 disconnected(dev, name)
             elif attr["Connected"] == 1 :
-                connected(hci, dev, name)
+                connected(hci, dev, name, klwargs['path'])
     elif name == "org.bluez.Device1" and 'member' in kwargs and 'path' in kwargs and kwargs['member']=='PropertiesChanged' and 'Connected' in attr and attr['Connected'] == 1:
         parts=kwargs['path'].split('/')
         if len(parts)>=4:
