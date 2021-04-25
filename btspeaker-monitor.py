@@ -18,10 +18,11 @@ from subprocess import Popen
 
 dbg = True
 
-CONFIG_FILE='bt-devices'
-SQUEEZE_LITE='/usr/bin/squeezelite'
-CHECKER='%s/check-squeezelite' % os.path.dirname(os.path.realpath(__file__))
+CONFIG_FILE = 'bt-devices'
+SQUEEZE_LITE = '/usr/bin/squeezelite'
+CHECKER = '%s/check-squeezelite' % os.path.dirname(os.path.realpath(__file__))
 DEVNULL = open(os.devnull, 'w')
+LMS = 'localhost' if len(sys.argv)<2 else sys.argv[1]
 
 players={}
 def debug(*args):
@@ -82,7 +83,6 @@ def controlChecker(val):
     numPlayers += val
     if checker is None and numPlayers>0:
         checker = GLib.timeout_add(CPU_CHECK_TIMEOUT, checkPlayersCpuUsage)
-
 # .....................................
 
 
@@ -93,8 +93,7 @@ MAC_RE = re.compile('^([0-9A-F]{2}:){5}([0-9A-F]{2})$')
 deviceCheckTimeout = None
 
 def sendCommand(mac, cmd):
-    lms = 'localhost' if len(sys.argv)<2 else sys.argv[1]
-    url = 'http://%s:9000/jsonrpc.js' % lms
+    url = 'http://%s:9000/jsonrpc.js' % LMS
     debug('Send %s to %s @ %s' % (str(cmd), mac.lower(), url))
     try:
         req = requests.post(url, json={'id':1, 'method':'slim.request', 'params': [mac.lower(), cmd]})
@@ -184,8 +183,7 @@ def connected(hci, dev, name, path):
         return
 
     debug("Connected %s" % name,hci,dev)
-    lms = 'localhost' if len(sys.argv)<2 else sys.argv[1]
-    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', lms, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path}
+    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', LMS, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path}
     openInput(key)
     controlChecker(1)
 
