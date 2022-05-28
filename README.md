@@ -15,7 +15,11 @@ Usage
 
 1. Copy `btspeaker-monitor.py` and`bt-devices`, to `/usr/local/bluetooth`
 2. `chmod +x /usr/local/bluetooth/btspeaker-monitor.py`
-3. Edit `bt-devices` to set LMS player name for a BT device's MAC address
+3. Edit `bt-devices` to set LMS player name, and (optionally) real device name,
+for a BT device's MAC address. Lines should be (e.g.):
+```
+01:02:03:04:05:06=LMS Name//Real Device Name
+```
 4. Pair BT devices if not already
 ```
 sudo bluetoothctl
