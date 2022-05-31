@@ -6,17 +6,9 @@ from __future__ import absolute_import, print_function, unicode_literals
 
 from gi.repository import GLib
 
-import dbus
-import dbus.mainloop.glib
-import evdev
-import json
-import os
-import re
-import requests
-import sys
-from subprocess import Popen
+import dbus, dbus.mainloop.glib, evdev, json, os, re, requests, subprocess, sys
 
-dbg = True
+dbg = False
 
 CONFIG_FILE = 'bt-devices'
 SQUEEZE_LITE = '/usr/bin/squeezelite'
@@ -26,7 +18,7 @@ LMS = 'localhost' if len(sys.argv)<2 else sys.argv[1]
 players={}
 inputDevices={} # Map from device to MAC
 def debug(*args):
-    if dbg == True:
+    if dbg:
         print(*args)
 
 # CPU usage checking...................
@@ -42,8 +34,8 @@ def checkPlayersCpuUsage():
         pidlist="-p"
         playerMap={}
         for key in players:
-            pidlist+=players[key]['squeeze'].pid+','
-            playerMap[''+players[key]['squeeze'].pid]=key
+            pidlist+='%d,' % players[key]['squeeze'].pid
+            playerMap['%d' % players[key]['squeeze'].pid]=key
         pidlist=pidlist[:-1]
 
         result = subprocess.run(['ps', '-o', 'pid,pcpu', pidlist], stdout=subprocess.PIPE)
@@ -199,7 +191,7 @@ def connected(hci, dev, name, realName, path):
 
     debug("Connected %s" % name,hci,dev)
     debug("cmd: %s" % str([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null']))
-    players[key] = {'squeeze':Popen([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path, 'realName':realName}
+    players[key] = {'squeeze':subprocess.Popen([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path, 'realName':realName}
     openInput(key)
     controlChecker(1)
 
@@ -236,6 +228,7 @@ def catchallHandler(name, attr, *args, **kwargs):
     """Catch all handler.
     Catch and debug information about all signals.
     """
+    debug("handler: %s %s %s %s" % (name, str(attr), str(args), str(kwargs)))
     if name == "org.bluez.MediaControl1" :
         dev = None
         hci = None
@@ -258,19 +251,19 @@ def catchallHandler(name, attr, *args, **kwargs):
                 disconnected(dev, name)
             elif attr["Connected"] == 1 :
                 connected(hci, dev, name, realName, kwargs['path'])
-    #elif name == "org.bluez.Device1" and 'member' in kwargs and 'path' in kwargs and kwargs['member']=='PropertiesChanged' and 'Connected' in attr and attr['Connected'] == 1:
-    #    parts=kwargs['path'].split('/')
-    #    if len(parts)>=4:
-    #        key="_".join(parts[4].split('_')[1:])
-    #        if not key in players:
-    #            debug('Call Connect for %s' % key)
-    #            bus = dbus.SystemBus()
-    #            service = bus.get_object('org.bluez', kwargs['path'])
-    #            iface = dbus.Interface(service, name)
-    #            try:
-    #                iface.Connect()
-    #            except:
-    #                pass
+    elif name == "org.bluez.Device1" and 'member' in kwargs and 'path' in kwargs and kwargs['member']=='PropertiesChanged' and 'Connected' in attr and attr['Connected'] == 1:
+        parts=kwargs['path'].split('/')
+        if len(parts)>=4:
+            key="_".join(parts[4].split('_')[1:])
+            if not key in players:
+                debug('Call Connect for %s' % key)
+                bus = dbus.SystemBus()
+                service = bus.get_object('org.bluez', kwargs['path'])
+                iface = dbus.Interface(service, name)
+                try:
+                    iface.Connect()
+                except Exception as e:
+                    debug("EX:%s" % str(e))
 
 
 if __name__ == '__main__':
