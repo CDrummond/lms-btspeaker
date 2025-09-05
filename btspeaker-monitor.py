@@ -190,8 +190,8 @@ def connected(hci, dev, name, realName, path):
         return
 
     debug("Connected %s" % name,hci,dev)
-    debug("cmd: %s" % str([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null']))
-    players[key] = {'squeeze':subprocess.Popen([SQUEEZE_LITE, '-s', 'localhost', '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path, 'realName':realName}
+    debug("cmd: %s" % str([SQUEEZE_LITE, '-s', LMS, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null']))
+    players[key] = {'squeeze':subprocess.Popen([SQUEEZE_LITE, '-s', LMS, '-o', 'bluealsa:DEV=%s,PROFILE=a2dp' % (dev), '-n', name, '-m', dev, '-M', 'SqueezeLiteBT', '-f', '/dev/null'], stdout=DEVNULL, stderr=DEVNULL, shell=False), 'input':{'checks':0, 'dev':None, 'watch': None}, 'path':path, 'realName':realName}
     openInput(key)
     controlChecker(1)
 
